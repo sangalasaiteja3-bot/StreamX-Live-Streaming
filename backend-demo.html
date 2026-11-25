@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>StreamX Backend Test</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#0b1020;color:#eef2ff;font:15px Arial,sans-serif;padding:28px}.wrap{max-width:980px;margin:auto}h1{color:#c4b5fd}h2{font-size:18px;color:#ddd6fe}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.card{background:#151c31;border:1px solid #303b59;border-radius:14px;padding:18px;margin:14px 0}input,select,textarea,button{width:100%;padding:11px;margin:6px 0;border-radius:8px;border:1px solid #455273;background:#0d1427;color:#fff}button{background:#7547d8;border:0;font-weight:bold;cursor:pointer}button.secondary{background:#34415e}.row{display:flex;gap:8px}.row>*{flex:1}.status{padding:12px;background:#101a2f;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}.muted{color:#aab5d0;font-size:13px}.item{border-top:1px solid #34415e;padding:10px 0}.good{color:#86efac}.bad{color:#fca5a5}a{color:#c4b5fd}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>StreamX · Backend Connection Test</h1>
+    <p class="muted">This page tests the live Supabase project: authentication, profile, stream records, likes/follows, chat and notifications.</p>
+    <div class="status" id="status">Connecting to Supabase…</div>
+    <div class="grid">
+      <section class="card"><h2>1. Create account</h2><input id="suName" placeholder="Username"><input id="suDisplay" placeholder="Display name"><input id="suEmail" type="email" placeholder="Email"><input id="suPass" type="password" placeholder="Password (min 6 characters)"><button id="signup">Sign up</button><p class="muted">If email confirmation is enabled, confirm the email before signing in.</p></section>
+      <section class="card"><h2>2. Login / Logout</h2><input id="inEmail" type="email" placeholder="Email"><input id="inPass" type="password" placeholder="Password"><div class="row"><button id="login">Login</button><button class="secondary" id="logout">Logout</button></div><button class="secondary" id="profile">Load my profile</button></section>
+      <section class="card"><h2>3. Create a live stream</h2><input id="streamTitle" placeholder="Stream title"><input id="streamDesc" placeholder="Description"><select id="streamCategory"><option>Gaming</option><option>Music</option><option>Education</option><option>Just chatting</option><option>Art & design</option></select><button id="createStream">Create live stream record</button><button class="secondary" id="loadStreams">Load live streams</button><div id="streams"></div></section>
+      <section class="card"><h2>4. Chat test</h2><input id="chatStreamId" placeholder="Stream ID (from live streams)"><input id="chatText" placeholder="Message"><button id="sendChat">Send message</button><button class="secondary" id="loadChat">Load chat messages</button><div id="chat"></div></section>
+      <section class="card"><h2>5. Follow / Like test</h2><input id="creatorId" placeholder="Creator user ID"><input id="likeStreamId" placeholder="Stream ID"><button id="follow">Follow creator</button><button class="secondary" id="like">Like stream</button></section>
+      <section class="card"><h2>6. Notifications</h2><button id="notifications">Load my notifications</button><div id="notices"></div></section>
+    </div>
+    <p class="muted">Note: Supabase stores accounts and stream data, follows, likes and chat. The camera preview in the main demo is local only; actual multi-viewer audio/video needs a WebRTC signaling/media service.</p>
+  </div>
+  <script type="module" src="./backend/backend-demo.js"></script>
+</body>
+</html>
