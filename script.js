@@ -2,7 +2,7 @@ import {
   auth, supabase, getMyProfile, updateMyProfile, listStreams, createStream,
   endStream, getMyFollowing, isFollowing, followCreator, unfollowCreator,
   getStreamLikeStats, likeStream, sendChatMessage, getChatMessages,
-  subscribeToChat, getPublicProfile, getMyNotifications
+  subscribeToChat, subscribeToStreams, getPublicProfile, getMyNotifications
 } from './backend/streamx-api.js';
 
 const $ = id => document.getElementById(id);
@@ -382,8 +382,8 @@ async function openViewer(stream) {
   $('viewerCreator').textContent = `${displayName(creator)} · ${stream.category || 'General'}`;
   $('viewerScreen').innerHTML = '<span>▶</span><small>Live video is not connected yet. This is the stream room and live chat.</small>';
   openBox($('viewerModal'));
-  $('followBtn').disabled = !currentUser || currentUser.id === stream.creator_id;
-  $('likeBtn').disabled = !currentUser;
+  $('followBtn').disabled = Boolean(currentUser && currentUser.id === stream.creator_id);
+  $('likeBtn').disabled = false;
   try {
     const [stats, chat] = await Promise.all([
       getStreamLikeStats(stream.id),
@@ -567,6 +567,7 @@ document.addEventListener('keydown', event => {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
     await syncAuthState(data.session);
+    subscribeToStreams(() => refreshStreams());
     supabase.auth.onAuthStateChange((_event, session) => {
       queueMicrotask(() => syncAuthState(session));
     });
