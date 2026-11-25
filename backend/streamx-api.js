@@ -182,6 +182,16 @@ export function subscribeToChat(streamId, onMessage) {
     .subscribe();
 }
 
+export function subscribeToStreams(onChange) {
+  return supabase.channel('streamx-live-streams')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'streams'
+    }, payload => onChange(payload))
+    .subscribe();
+}
+
 export async function getMyNotifications() {
   const user = await auth.currentUser();
   if (!user) throw new Error('Sign in first.');
