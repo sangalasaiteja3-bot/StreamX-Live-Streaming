@@ -283,9 +283,21 @@ function openLive() {
   $('modalNotice').textContent = 'Camera preview is local to this browser. Supabase will store the live stream record; video broadcasting needs a WebRTC/media service.';
   openBox(liveModal);
 }
-function closeLive() {
+async function closeLive() {
   closeBox(liveModal);
-  if (!ownLiveStream) stopCamera();
+  if (ownLiveStream) {
+    const streamId = ownLiveStream.id;
+    ownLiveStream = null;
+    startBtn.textContent = '● Go live';
+    try {
+      await endStream(streamId);
+      showToast('Stream ended and saved.');
+      await refreshStreams();
+    } catch (error) {
+      showToast('Camera closed, but stream status could not be updated: ' + error.message);
+    }
+  }
+  stopCamera();
 }
 $('heroGoLive').addEventListener('click', openLive);
 $('sideGoLive').addEventListener('click', openLive);
@@ -555,7 +567,7 @@ document.querySelector('.icon-btn').addEventListener('click', async () => {
 
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
-    closeBox(liveModal);
+    closeLive();
     closeBox($('viewerModal'));
     closeBox($('profileModal'));
     closeBox($('authModal'));
