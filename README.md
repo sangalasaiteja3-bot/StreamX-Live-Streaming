@@ -1,34 +1,55 @@
 # StreamX — Live Streaming Web Application
 
-StreamX is a browser-based live-streaming community demo with a dark responsive interface and a Supabase backend.
+StreamX is a responsive browser-based live-streaming community project with an interactive frontend and a Supabase backend.
 
-## Repository contents
-The complete source project is available in **[StreamX_Supabase_Backend_Integrated.zip](./StreamX_Supabase_Backend_Integrated.zip)**. Extract it to get:
-- `index.html`, `style.css`, `script.js` — main StreamX website
-- `backend-demo.html` — Supabase integration test dashboard
-- `backend/supabase-client.js` — Supabase browser client (publishable key only)
-- `backend/streamx-api.js` — authentication, profiles, streams, follows, likes, chat and notifications
-- `README_BACKEND.md` — setup instructions and backend notes
+## Open the project
+- Main website: [index.html](./index.html)
+- Supabase backend test dashboard: [backend-demo.html](./backend-demo.html)
+- Backend setup notes: [README_BACKEND.md](./README_BACKEND.md)
+
+## Project structure
+```
+.
+├── index.html
+├── style.css
+├── script.js
+├── backend-demo.html
+├── backend/
+│   ├── backend-demo.js
+│   ├── streamx-api.js
+│   └── supabase-client.js
+├── supabase/
+│   └── README.md
+└── README_BACKEND.md
+```
 
 ## Supabase backend
 Project: [StreamX Supabase Dashboard](https://supabase.com/dashboard/project/pzuxtlgadeqzzkghkyqb)  
-Region: Mumbai (ap-south-1)
+Region: Mumbai (`ap-south-1`)
 
-Tables configured: `profiles`, `streams`, `follows`, `stream_messages`, `stream_likes`, `notifications`. Row Level Security is enabled. Realtime is enabled for streams and chat. Storage buckets: `streamx-avatars` and `streamx-thumbnails`.
+The Supabase project includes these tables:
+- `profiles` — creator/user profiles
+- `streams` — stream metadata and status
+- `follows` — follower relationships
+- `stream_messages` — persisted chat messages
+- `stream_likes` — stream likes
+- `notifications` — private notifications
 
-## Run locally
-1. Download and extract the ZIP.
-2. Open the extracted `StreamX_Full_Demo` folder in VS Code.
-3. Open a terminal in that folder and run:
+Row Level Security is enabled on the public tables. Realtime is enabled for streams and chat. Storage buckets `streamx-avatars` and `streamx-thumbnails` are configured.
+
+The browser client uses a Supabase **publishable** key. Never put a service-role key or database password in frontend code.
+
+## Run locally in VS Code
+1. Clone or download this repository.
+2. Open the repository folder in VS Code.
+3. Run this command in the terminal:
    ```bash
    python -m http.server 5500
    ```
-4. Open http://localhost:5500
+4. Open http://localhost:5500.
+5. Open http://localhost:5500/backend-demo.html to test Supabase signup/login, profiles, stream records, follows, likes, chat and notifications.
 
-For the backend test page, open http://localhost:5500/backend-demo.html.
+## Current implementation notes
+The main `index.html` page is an interactive frontend demonstration. Its search/filter, profile, follow/like and chat interactions use browser local storage/session state. The separate `backend-demo.html` page exercises the connected Supabase backend through `backend/streamx-api.js`.
 
-## Important video note
-Supabase stores user accounts, stream metadata, follows, likes, chat and notifications. The camera preview in the demo is local to the creator's browser. Real multi-viewer live video needs WebRTC signaling/media infrastructure or a dedicated streaming provider; Supabase itself is not a video relay server.
-
-## Security
-The frontend contains only a Supabase publishable key. Never add a service-role key, secret API key, or database password to browser code or this repository.
+The creator camera preview is local to that browser. Real multi-viewer live audio/video needs WebRTC signaling/media infrastructure or a dedicated streaming provider. Supabase stores the stream metadata and chat, but is not itself a video relay server.
