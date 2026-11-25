@@ -28,7 +28,7 @@
     <header class="topbar">
       <div class="mobile-brand"><span class="brand-mark">S</span> stream<span class="accent">X</span></div>
       <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="Search streams, creators, categories..."><kbd>⌘ K</kbd></label>
-      <div class="top-actions"><button class="icon-btn" title="Notifications">♧<i></i></button><button class="profile-pill"><span class="avatar">ST</span><span>Sai Teja</span>⌄</button></div>
+      <div class="top-actions"><button class="icon-btn" title="Notifications">♧<i></i></button><button class="profile-pill" id="authOpenBtn">Sign in / Sign up</button></div>
     </header>
 
     <section class="hero">
@@ -50,13 +50,8 @@
     <section class="section" id="explore">
       <div class="section-heading"><div><div class="eyebrow">WHAT'S HAPPENING</div><h2>Live right now <span class="live-count">● 128 live</span></h2></div><a class="text-link" href="#explore">View all <span>→</span></a></div>
       <div class="filters" id="categories"><button class="filter active" data-filter="All">For you</button><button class="filter" data-filter="Gaming">🎮 Gaming</button><button class="filter" data-filter="Music">♫ Music</button><button class="filter" data-filter="Education">✧ Education</button><button class="filter" data-filter="Talk">☏ Just chatting</button><button class="filter" data-filter="Art">✎ Art & design</button></div>
-      <div class="stream-grid" id="streamGrid">
-        <article class="stream-card" data-category="Gaming" data-title="Rank push with the squad" data-creator="Alex Plays"><div class="thumbnail thumb-game"><span class="live-badge">● LIVE</span><span class="thumb-symbol">⌁</span><span class="viewer-badge">◉ 2.4K</span></div><div class="stream-info"><div class="avatar av-blue">AP</div><div class="stream-text"><b>Rank push with the squad 🔥</b><span>Alex Plays · Gaming</span></div><button class="more">•••</button></div></article>
-        <article class="stream-card" data-category="Music" data-title="Late night acoustic session" data-creator="Mia Rose"><div class="thumbnail thumb-music"><span class="live-badge">● LIVE</span><span class="thumb-symbol">♫</span><span class="viewer-badge">◉ 986</span></div><div class="stream-info"><div class="avatar av-pink">MR</div><div class="stream-text"><b>Late night acoustic session</b><span>Mia Rose · Music</span></div><button class="more">•••</button></div></article>
-        <article class="stream-card" data-category="Education" data-title="Build a website with me" data-creator="CodeWithJay"><div class="thumbnail thumb-code"><span class="live-badge">● LIVE</span><span class="thumb-symbol">&lt;/&gt;</span><span class="viewer-badge">◉ 743</span></div><div class="stream-info"><div class="avatar av-green">CJ</div><div class="stream-text"><b>Build a website with me</b><span>CodeWithJay · Education</span></div><button class="more">•••</button></div></article>
-        <article class="stream-card" data-category="Talk" data-title="Coffee, questions & good vibes" data-creator="TheDailyN"><div class="thumbnail thumb-talk"><span class="live-badge">● LIVE</span><span class="thumb-symbol">☕</span><span class="viewer-badge">◉ 512</span></div><div class="stream-info"><div class="avatar av-orange">DN</div><div class="stream-text"><b>Coffee, questions & good vibes</b><span>TheDailyN · Just chatting</span></div><button class="more">•••</button></div></article>
-      </div>
-      <div class="empty-state" id="emptyState" hidden>No streams found. Try another search or category.</div>
+      <div class="stream-grid" id="streamGrid"></div>
+      <div class="empty-state" id="emptyState" hidden>There are no live streams yet. Sign in and start the first StreamX stream.</div>
     </section>
     <section class="section extra-section" id="following"><div class="section-heading"><div><div class="eyebrow">YOUR COMMUNITY</div><h2>Following</h2></div></div><div id="followingList" class="following-list">You are not following any creators yet. Open a stream and select Follow to build your list.</div></section>
     <section class="section extra-section" id="profile"><div class="section-heading"><div><div class="eyebrow">YOUR ACCOUNT</div><h2>My profile</h2></div><button class="secondary-btn" id="editProfileBtn">Edit profile</button></div><div class="profile-panel"><div class="avatar profile-avatar" id="profileAvatar">ST</div><div><h3 id="profileName">Sai Teja</h3><p id="profileBio">Creator account · Welcome to StreamX!</p></div></div></section>
@@ -78,7 +73,35 @@
   </div>
   <div class="modal-backdrop" id="viewerModal" aria-hidden="true"><div class="modal viewer-modal"><button class="close-modal" id="closeViewer">×</button><div class="eyebrow"><span class="pulse"></span> LIVE STREAM</div><h2 id="viewerTitle">Stream title</h2><p class="modal-sub" id="viewerCreator">Creator · Category</p><div class="viewer-screen" id="viewerScreen"><span>▶</span><small>Demo stream preview</small></div><div class="viewer-actions"><button class="secondary-btn" id="followBtn">♡ Follow creator</button><button class="secondary-btn" id="likeBtn">♡ Like <span id="likeCount">0</span></button></div><div class="chat-box"><b>Live chat</b><div id="chatMessages" class="chat-messages"><p class="chat-system">Welcome! Be kind to everyone in chat.</p></div><form id="chatForm"><input id="chatInput" class="field" maxlength="180" placeholder="Send a message..." required><button class="primary-btn">Send</button></form></div></div></div>
   <div class="modal-backdrop" id="profileModal" aria-hidden="true"><div class="modal"><button class="close-modal" id="closeProfile">×</button><div class="eyebrow">ACCOUNT SETTINGS</div><h2>Edit your profile</h2><label class="field-label" for="nameInput">Display name</label><input class="field" id="nameInput" maxlength="32" value="Sai Teja"><label class="field-label" for="bioInput">Bio</label><input class="field" id="bioInput" maxlength="100" value="Creator account · Welcome to StreamX!"><div class="modal-actions"><button class="primary-btn" id="saveProfile">Save profile</button></div></div></div>
+
+  <div class="modal-backdrop" id="authModal" aria-hidden="true">
+    <div class="modal">
+      <button class="close-modal" id="closeAuth">×</button>
+      <div class="eyebrow">STREAMX ACCOUNT</div>
+      <h2 id="authHeading">Welcome to StreamX</h2>
+      <p class="modal-sub" id="authSubheading">Sign in to follow creators, chat, and go live.</p>
+      <div id="authForm">
+        <div id="signupFields" hidden>
+          <label class="field-label" for="authUsername">Username</label>
+          <input class="field" id="authUsername" maxlength="30" placeholder="Choose a username (3–30 characters)">
+          <label class="field-label" for="authDisplayName">Display name</label>
+          <input class="field" id="authDisplayName" maxlength="40" placeholder="Your display name">
+        </div>
+        <label class="field-label" for="authEmail">Email</label>
+        <input class="field" id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
+        <label class="field-label" for="authPassword">Password</label>
+        <input class="field" id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters">
+        <button class="primary-btn" id="authSubmit" style="width:100%;margin-top:16px">Sign in</button>
+        <button class="text-link" id="authModeToggle" type="button" style="margin-top:14px;background:none;border:0">New here? Create an account</button>
+      </div>
+      <div id="signedInPanel" hidden>
+        <p class="notice" id="signedInDetails"></p>
+        <button class="secondary-btn" id="authSignOut" type="button" style="width:100%;margin-top:15px">Sign out</button>
+      </div>
+      <p class="notice" id="authMessage" role="status">Your account is stored securely in Supabase Auth.</p>
+    </div>
+  </div>
   <div class="toast" id="toast" role="status"></div>
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
