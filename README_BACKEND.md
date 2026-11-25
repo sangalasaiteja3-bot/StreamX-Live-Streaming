@@ -1,33 +1,44 @@
-# StreamX backend setup
+# StreamX backend
 
-## Supabase project
+## Hosted Supabase
 - Project: StreamX
-- Region: Mumbai, India (`ap-south-1`)
-- Project reference: `pzuxtlgadeqzzkghkyqb`
+- Region: Mumbai (`ap-south-1`)
+- Project ref: `pzuxtlgadeqzzkghkyqb`
 - Dashboard: https://supabase.com/dashboard/project/pzuxtlgadeqzzkghkyqb
-- Project URL: https://pzuxtlgadeqzzkghkyqb.supabase.co
+- API URL: https://pzuxtlgadeqzzkghkyqb.supabase.co
 
-The browser client is configured in `backend/supabase-client.js` with the project's publishable key. Publishable keys are intended for frontend use. Never add a service-role or secret key to browser files or GitHub.
+The website imports the shared client from `backend/supabase-client.js` and database functions from `backend/streamx-api.js`.
 
-## Database objects
-- `profiles` — creator/user profiles, automatically created after signup
-- `streams` — stream title, category, status and creator
-- `follows` — follower relationships
-- `stream_messages` — persistent chat messages
-- `stream_likes` — one like per user per stream
-- `notifications` — private user notifications
+## Main app integrations
+| App action | Supabase resource |
+|---|---|
+| Sign up / sign in / sign out | Supabase Auth |
+| Load and edit profile | `profiles` |
+| Create, list and end streams | `streams` |
+| Live feed refresh | Realtime changes on `streams` |
+| Follow / unfollow | `follows` |
+| Like a stream | `stream_likes` |
+| Load/send chat | `stream_messages` |
+| Live chat updates | Realtime changes on `stream_messages` |
+| Notifications | `notifications` |
 
-RLS is enabled on every public table. Realtime database changes are enabled for `streams` and `stream_messages`. Storage buckets: `streamx-avatars` and `streamx-thumbnails`.
+The profile trigger creates a `profiles` row after a new Auth user is created. All six exposed public tables have Row Level Security enabled, and the existing project policies restrict write operations to authenticated owners/users.
 
-## Run it in VS Code
-1. Open this repository folder in VS Code.
-2. Run `python -m http.server 5500` in the terminal.
-3. Open http://localhost:5500 for the main site.
-4. Open http://localhost:5500/backend-demo.html to test the Supabase auth/database functions.
-5. Create an account and confirm your email if confirmation is enabled.
+## Run in VS Code
+1. Open the project folder.
+2. Run `python -m http.server 5500`.
+3. Visit http://localhost:5500.
+4. Use **Sign in / Sign up** in the top-right corner.
+5. Open Creator Studio, enable camera/microphone, and click Go Live to create a Supabase stream record.
+6. Open the stream card to read and send persistent realtime chat messages.
 
-## Important video note
-The database, authentication, CRUD API layer, and chat persistence/realtime subscription are set up. The camera preview in the main website is local to the creator's browser. Real multi-viewer live video requires WebRTC signaling/media infrastructure or a dedicated streaming provider; Supabase stores stream metadata and chat but does not relay live video.
+Use http://localhost:5500/backend-demo.html for a separate backend test dashboard.
+
+## Email confirmation
+Hosted Supabase projects commonly require email verification by default. After sign-up, check your email, confirm the address, return to the local app, and sign in. Passwords are handled by Supabase Auth, not stored in the StreamX tables.
+
+## Video architecture limitation
+The app currently creates and syncs stream metadata and chat, but camera preview is local only. To make viewers receive a live audiovisual feed, add WebRTC signaling plus STUN/TURN and a Selective Forwarding Unit (SFU), or integrate a managed streaming provider. Do not describe the current Supabase-only build as full video broadcasting.
 
 ## Security
-Only the publishable key is present in the frontend. Do not commit any service-role key, database password, or other secret to GitHub.
+The browser uses a Supabase publishable key only. Never commit a service-role or secret key, database password, or private token.
