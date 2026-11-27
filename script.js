@@ -11,12 +11,26 @@ const liveModal = $('liveModal');
 const video = $('cameraPreview');
 const cameraPlaceholder = $('cameraPlaceholder');
 const cameraBtn = $('cameraBtn');
+const screenBtn = $('screenBtn');
 const startBtn = $('startBtn');
 const toast = $('toast');
+
+// The original camera stream is kept separate from the composed screen+webcam recording.
+const cameraSourceVideo = document.createElement('video');
+cameraSourceVideo.autoplay = true;
+cameraSourceVideo.muted = true;
+cameraSourceVideo.playsInline = true;
 
 let currentUser = null;
 let profile = null;
 let mediaStream = null;
+let screenStream = null;
+let screenVideo = null;
+let compositionCanvas = null;
+let compositionFrameId = null;
+let recordingPreviewStream = null;
+let recordingStream = null;
+let audioContext = null;
 let mediaRecorder = null;
 let recordingChunks = [];
 let recordingStartedAt = null;
@@ -342,18 +356,208 @@ function recordingMimeType() {
   return candidates.find(type => window.MediaRecorder?.isTypeSupported?.(type)) || '';
 }
 
+function drawVideoCover(context, source, x, y, width, height) {
+  const sourceWidth = source.videoWidth || width;
+  const sourceHeight = source.videoHeight || height;
+  const scale = Math.max(width / sourceWidth, height / sourceHeight);
+  const cropWidth = width / scale;
+  const cropHeight = height / scale;
+  const sx = (sourceWidth - cropWidth) / 2;
+  const sy = (sourceHeight - cropHeight) / 2;
+  context.drawImage(source, sx, sy, cropWidth, cropHeight, x, y, width, height);
+}
+
+function drawCompositionFrame() {
+  if (!compositionCanvas) return;
+  const context = compositionCanvas.getContext('2d');
+  const width = compositionCanvas.width;
+  const height = compositionCanvas.height;
+  context.fillStyle = '#070910';
+  context.fillRect(0, 0, width, height);
+
+  const screenReady = screenStream && screenVideo && screenVideo.readyState >= 2 && screenVideo.videoWidth;
+  if (screenReady) {
+    const sourceWidth = screenVideo.videoWidth;
+    const sourceHeight = screenVideo.videoHeight;
+    const scale = Math.min(width / sourceWidth, height / sourceHeight);
+    const drawWidth = sourceWidth * scale;
+    const drawHeight = sourceHeight * scale;
+    context.drawImage(screenVideo, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+
+    // Webcam picture-in-picture in the lower-right corner.
+    const cameraWidth = 320;
+    const cameraHeight = 180;
+    const cameraX = width - cameraWidth - 28;
+    const cameraY = height - cameraHeight - 28;
+    context.save();
+    context.fillStyle = '#0b0d14';
+    context.beginPath();
+    if (typeof context.roundRect === 'function') {
+      context.roundRect(cameraX - 5, cameraY - 5, cameraWidth + 10, cameraHeight + 10, 18);
+    } else {
+      context.rect(cameraX - 5, cameraY - 5, cameraWidth + 10, cameraHeight + 10);
+    }
+    context.fill();
+    context.clip();
+    if (cameraSourceVideo.readyState >= 2 && cameraSourceVideo.videoWidth) {
+      context.translate(cameraX + cameraWidth, cameraY);
+      context.scale(-1, 1);
+      drawVideoCover(context, cameraSourceVideo, 0, 0, cameraWidth, cameraHeight);
+    } else {
+      context.fillStyle = '#23283a';
+      context.fillRect(cameraX, cameraY, cameraWidth, cameraHeight);
+    }
+    context.restore();
+  } else if (cameraSourceVideo.readyState >= 2 && cameraSourceVideo.videoWidth) {
+    // If screen sharing is stopped, keep recording the webcam full-frame.
+    drawVideoCover(context, cameraSourceVideo, 0, 0, width, height);
+  }
+
+  compositionFrameId = requestAnimationFrame(drawCompositionFrame);
+}
+
+async function startScreenShare() {
+  if (!mediaStream) {
+    showToast('Enable your camera and microphone before sharing your screen.');
+    return;
+  }
+  if (screenStream || recordingPreviewStream) {
+    showToast('Screen capture is already set up for this stream.');
+    return;
+  }
+  if (!navigator.mediaDevices?.getDisplayMedia) {
+    showToast('Screen sharing is not supported here. Use the latest Chrome or Edge on localhost or HTTPS.');
+    return;
+  }
+
+  try {
+    screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: { ideal: 24, max: 30 } },
+      audio: true
+    });
+
+    screenVideo = document.createElement('video');
+    screenVideo.autoplay = true;
+    screenVideo.muted = true;
+    screenVideo.playsInline = true;
+    screenVideo.srcObject = screenStream;
+    await screenVideo.play();
+
+    compositionCanvas = document.createElement('canvas');
+    compositionCanvas.width = 1280;
+    compositionCanvas.height = 720;
+    compositionFrameId = requestAnimationFrame(drawCompositionFrame);
+    recordingPreviewStream = compositionCanvas.captureStream(24);
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) throw new Error('This browser cannot mix microphone and screen audio.');
+    audioContext = new AudioContextClass();
+    await audioContext.resume();
+    const audioDestination = audioContext.createMediaStreamDestination();
+    const audioTracks = [
+      ...mediaStream.getAudioTracks(),
+      ...screenStream.getAudioTracks()
+    ];
+    audioTracks.forEach((track, index) => {
+      const source = audioContext.createMediaStreamSource(new MediaStream([track]));
+      const gain = audioContext.createGain();
+      gain.gain.value = index === 0 ? 1 : 0.65;
+      source.connect(gain);
+      gain.connect(audioDestination);
+    });
+
+    recordingStream = new MediaStream([
+      ...recordingPreviewStream.getVideoTracks(),
+      ...audioDestination.stream.getAudioTracks()
+    ]);
+    video.srcObject = recordingPreviewStream;
+    video.style.display = 'block';
+    cameraPlaceholder.style.display = 'none';
+    await video.play().catch(() => {});
+
+    const activeScreen = screenStream;
+    const screenTrack = screenStream.getVideoTracks()[0];
+    if (screenTrack) {
+      screenTrack.addEventListener('ended', () => {
+        if (screenStream !== activeScreen) return;
+        screenStream = null;
+        if (screenVideo) {
+          screenVideo.pause();
+          screenVideo.srcObject = null;
+        }
+        screenBtn.textContent = 'Screen ended — camera continues';
+        screenBtn.disabled = true;
+        showToast('Screen sharing ended. Camera recording will continue.');
+      }, { once: true });
+    }
+
+    screenBtn.textContent = 'Stop screen share';
+    screenBtn.classList.add('screen-sharing-active');
+    showToast('Screen and webcam are ready. Go Live to record both.');
+  } catch (error) {
+    console.error('Screen sharing setup failed:', error);
+    if (screenStream) screenStream.getTracks().forEach(track => track.stop());
+    screenStream = null;
+    if (screenVideo) {
+      screenVideo.pause();
+      screenVideo.srcObject = null;
+      screenVideo = null;
+    }
+    if (compositionFrameId !== null) cancelAnimationFrame(compositionFrameId);
+    compositionFrameId = null;
+    if (recordingPreviewStream) recordingPreviewStream.getTracks().forEach(track => track.stop());
+    recordingPreviewStream = null;
+    if (recordingStream) recordingStream.getTracks().forEach(track => track.stop());
+    recordingStream = null;
+    compositionCanvas = null;
+    if (audioContext) await audioContext.close().catch(() => {});
+    audioContext = null;
+    video.srcObject = mediaStream;
+    screenBtn.textContent = 'Share screen';
+    screenBtn.classList.remove('screen-sharing-active');
+    screenBtn.disabled = false;
+    showToast('Could not share screen: ' + (error.message || 'permission was cancelled.'));
+  }
+}
+
+function stopScreenShare() {
+  const active = screenStream;
+  screenStream = null;
+  if (active) active.getTracks().forEach(track => track.stop());
+  if (screenVideo) {
+    screenVideo.pause();
+    screenVideo.srcObject = null;
+    screenVideo = null;
+  }
+  if (compositionFrameId !== null) cancelAnimationFrame(compositionFrameId);
+  compositionFrameId = null;
+  if (recordingPreviewStream) recordingPreviewStream.getTracks().forEach(track => track.stop());
+  recordingPreviewStream = null;
+  if (recordingStream) recordingStream.getTracks().forEach(track => track.stop());
+  recordingStream = null;
+  compositionCanvas = null;
+  if (audioContext) {
+    audioContext.close().catch(error => console.warn('Could not close audio context:', error));
+    audioContext = null;
+  }
+  screenBtn.textContent = 'Share screen';
+  screenBtn.classList.remove('screen-sharing-active');
+  screenBtn.disabled = false;
+}
+
 function startLocalRecording() {
   if (!window.MediaRecorder) {
     throw new Error('This browser does not support recording. Please use the latest Chrome or Edge.');
   }
   if (!mediaStream) throw new Error('Enable your camera and microphone before going live.');
+  const sourceStream = recordingStream || mediaStream;
 
   const mimeType = recordingMimeType();
   // Keep the recording bitrate modest so a video can fit the private bucket's 50 MB limit.
   const options = mimeType
     ? { mimeType, videoBitsPerSecond: 520000, audioBitsPerSecond: 64000 }
     : { videoBitsPerSecond: 520000, audioBitsPerSecond: 64000 };
-  mediaRecorder = new MediaRecorder(mediaStream, options);
+  mediaRecorder = new MediaRecorder(sourceStream, options);
   recordingChunks = [];
   recordingStartedAt = Date.now();
   mediaRecorder.addEventListener('dataavailable', event => {
@@ -505,10 +709,13 @@ async function refreshRecordings() {
 $('refreshRecordingsBtn').addEventListener('click', refreshRecordings);
 
 function stopCamera() {
+  stopScreenShare();
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
     mediaStream = null;
   }
+  cameraSourceVideo.pause();
+  cameraSourceVideo.srcObject = null;
   video.pause();
   video.srcObject = null;
   video.style.display = 'none';
@@ -545,6 +752,8 @@ cameraBtn.addEventListener('click', async () => {
   }
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    cameraSourceVideo.srcObject = mediaStream;
+    await cameraSourceVideo.play().catch(() => {});
     video.srcObject = mediaStream;
     video.style.display = 'block';
     cameraPlaceholder.style.display = 'none';
@@ -553,6 +762,23 @@ cameraBtn.addEventListener('click', async () => {
   } catch (error) {
     showToast('Camera permission denied or no camera/microphone was found.');
   }
+});
+
+screenBtn.addEventListener('click', async () => {
+  if (screenStream) {
+    const active = screenStream;
+    screenStream = null;
+    active.getTracks().forEach(track => track.stop());
+    if (screenVideo) {
+      screenVideo.pause();
+      screenVideo.srcObject = null;
+    }
+    screenBtn.textContent = 'Screen ended — camera continues';
+    screenBtn.disabled = true;
+    showToast('Screen sharing stopped. Camera recording will continue.');
+    return;
+  }
+  await startScreenShare();
 });
 startBtn.addEventListener('click', async () => {
   if (!currentUser) {
