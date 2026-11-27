@@ -378,7 +378,11 @@ async function stopRecordingAndSave(stream) {
           title: stream.title,
           category: stream.category,
           blob,
-          durationSeconds
+          durationSeconds,
+          onProgress: (uploaded, total) => {
+            const percent = total ? Math.floor((uploaded / total) * 100) : 0;
+            $('modalNotice').textContent = `Uploading your recording to private storage: ${percent}%`;
+          }
         });
         await refreshRecordings();
         resolve(saved);
