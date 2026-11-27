@@ -50,5 +50,5 @@ The browser uses a Supabase publishable key only. Never commit a service-role or
 - When the creator ends the stream, the browser uploads the WebM/MP4 file to the private `streamx-recordings` Supabase Storage bucket.
 - Recording metadata is stored in `stream_recordings`. Open **My Recordings** in the app to watch or download files.
 - Files are private: authenticated users can upload, read, and delete only objects in their own user-ID folder. Signed watch/download links expire after one hour.
-- Individual recordings are limited to 250 MB. Files up to 6 MB use the standard Storage upload; larger files use Supabase's TUS resumable upload flow in 6 MB chunks. Upload time depends on recording size and network speed.
+- Individual recordings are limited to 50 MB. Files up to 6 MB use the standard Storage upload; larger files use Supabase's TUS resumable upload flow in 6 MB chunks. Upload time depends on recording size and network speed.
 - This feature saves the creator's local camera/microphone feed; it does not make the camera feed visible to other viewers. Multi-viewer live broadcasting still requires a WebRTC/SFU or managed streaming service.
