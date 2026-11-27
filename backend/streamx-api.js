@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { supabase, SUPABASE_PUBLISHABLE_KEY } from './supabase-client.js';
 
 export const auth = {
   async signUp(email, password, username, displayName) {
@@ -205,7 +205,7 @@ export { supabase };
 
 
 /** Upload a creator's MediaRecorder output to private Supabase Storage. */
-export async function saveStreamRecording({ streamId, title, category, blob, durationSeconds }) {
+export async function saveStreamRecording({ streamId, title, category, blob, durationSeconds, onProgress }) {
   const user = await auth.currentUser();
   if (!user) throw new Error('Sign in before saving a recording.');
   if (!(blob instanceof Blob) || blob.size === 0) {
@@ -220,14 +220,51 @@ export async function saveStreamRecording({ streamId, title, category, blob, dur
   const extension = contentType === 'video/mp4' ? 'mp4' : 'webm';
   const filePath = `${user.id}/${streamId}/recording-${Date.now()}.${extension}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('streamx-recordings')
-    .upload(filePath, blob, {
-      contentType,
-      cacheControl: '3600',
-      upsert: false
+  const uploadProgress = ({ uploaded, total }) => {
+    if (typeof onProgress === 'function') onProgress(uploaded, total);
+  };
+
+  if (blob.size <= 6 * 1024 * 1024) {
+    const { error: uploadError } = await supabase.storage
+      .from('streamx-recordings')
+      .upload(filePath, blob, {
+        contentType,
+        cacheControl: '3600',
+        upsert: false
+      });
+    if (uploadError) throw uploadError;
+  } else {
+    // Supabase recommends TUS resumable uploads for files larger than 6 MB.
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!sessionData.session) throw new Error('Your session expired. Sign in again and retry the upload.');
+
+    const { Upload } = await import('https://esm.sh/tus-js-client@4.3.1');
+    await new Promise((resolve, reject) => {
+      const upload = new Upload(blob, {
+        endpoint: 'https://pzuxtlgadeqzzkghkyqb.storage.supabase.co/storage/v1/upload/resumable',
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        headers: {
+          authorization: `Bearer ${sessionData.session.access_token}`,
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          'x-upsert': 'false'
+        },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        metadata: {
+          bucketName: 'streamx-recordings',
+          objectName: filePath,
+          contentType,
+          cacheControl: '3600'
+        },
+        chunkSize: 6 * 1024 * 1024,
+        onError: reject,
+        onProgress: (uploaded, total) => uploadProgress({ uploaded, total }),
+        onSuccess: resolve
+      });
+      upload.start();
     });
-  if (uploadError) throw uploadError;
+  }
 
   const { data, error } = await supabase.from('stream_recordings').insert({
     stream_id: streamId,
