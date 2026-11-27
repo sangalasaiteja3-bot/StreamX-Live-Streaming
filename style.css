@@ -17,3 +17,18 @@
 .logout-header-btn:disabled{opacity:.6;cursor:wait}
 [hidden]{display:none!important}
 @media(max-width:720px){.auth-header-actions{gap:5px}.auth-header-actions .profile-pill,.logout-header-btn{min-height:34px;padding:7px 9px;font-size:10px}.top-actions{gap:7px}}
+
+
+/* Working sidebar account menu */
+.sidebar-bottom{position:relative}
+.user-mini{position:relative}
+.user-mini-details{min-width:0}
+.user-mini-details b,.user-mini-details small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px}
+.dots{margin-left:auto;color:#9da5b8;border:0;background:transparent;border-radius:7px;padding:7px 8px;font-size:14px;line-height:1}
+.dots:hover,.dots[aria-expanded="true"]{background:#29213f;color:#d8c7ff}
+.account-menu{position:absolute;right:5px;bottom:60px;z-index:30;width:180px;padding:6px;background:#171c2a;border:1px solid #39334f;border-radius:10px;box-shadow:0 14px 35px #0009}
+.account-menu:not([hidden]){display:grid;gap:3px}
+.account-menu button{width:100%;text-align:left;border:0;background:transparent;color:#dce1ef;padding:10px 11px;border-radius:7px;font-size:12px}
+.account-menu button:hover{background:#29213f;color:#e4d8ff}
+.account-menu .account-menu-logout{color:#ffb7c9}
+.account-menu .account-menu-logout:hover{background:#3a1e2b;color:#ffd5df}
