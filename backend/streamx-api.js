@@ -211,9 +211,9 @@ export async function saveStreamRecording({ streamId, title, category, blob, dur
   if (!(blob instanceof Blob) || blob.size === 0) {
     throw new Error('The recording is empty, so there is no video to save.');
   }
-  const maxBytes = 250 * 1024 * 1024;
+  const maxBytes = 50 * 1024 * 1024;
   if (blob.size > maxBytes) {
-    throw new Error('This recording is larger than the 250 MB limit. Try a shorter stream.');
+    throw new Error('This recording is larger than the 50 MB limit. Try a shorter stream.');
   }
 
   const detectedType = String(blob.type || 'video/webm').toLowerCase();
