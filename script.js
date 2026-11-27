@@ -517,7 +517,7 @@ function openLive() {
     openAuth();
     return;
   }
-  $('modalNotice').textContent = 'Enable your camera and microphone, then go live. StreamX records your local camera/mic feed and uploads it privately when you end the stream. This build does not yet relay video to remote viewers.';
+  $('modalNotice').textContent = 'Enable your camera and microphone, then go live. StreamX records your local camera/mic feed and uploads it privately when you end the stream (50 MB max). This build does not yet relay video to remote viewers.';
   openBox(liveModal);
 }
 async function closeLive() {
