@@ -349,7 +349,7 @@ function startLocalRecording() {
   if (!mediaStream) throw new Error('Enable your camera and microphone before going live.');
 
   const mimeType = recordingMimeType();
-  const options = mimeType ? { mimeType, videoBitsPerSecond: 2500000 } : { videoBitsPerSecond: 2500000 };
+  const options = mimeType ? { mimeType, videoBitsPerSecond: 1200000 } : { videoBitsPerSecond: 1200000 };
   mediaRecorder = new MediaRecorder(mediaStream, options);
   recordingChunks = [];
   recordingStartedAt = Date.now();
