@@ -21,7 +21,7 @@ Do not open `index.html` directly as a file; use localhost so browser ES modules
 - My Recordings library with in-page playback and download links
 - Resumable TUS uploads for video files larger than 6 MB
 
-The homepage now loads live streams from Postgres rather than showing hard-coded sample streams. Users must sign in for actions that write data. Recordings are limited to 250 MB per stream.
+The homepage now loads live streams from Postgres rather than showing hard-coded sample streams. Users must sign in for actions that write data. Recordings are limited to 50 MB per stream.
 
 ## Backend project
 [Open StreamX Supabase Dashboard](https://supabase.com/dashboard/project/pzuxtlgadeqzzkghkyqb)  
