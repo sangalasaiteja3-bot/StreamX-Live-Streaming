@@ -349,7 +349,10 @@ function startLocalRecording() {
   if (!mediaStream) throw new Error('Enable your camera and microphone before going live.');
 
   const mimeType = recordingMimeType();
-  const options = mimeType ? { mimeType, videoBitsPerSecond: 1200000 } : { videoBitsPerSecond: 1200000 };
+  // Keep the recording bitrate modest so a video can fit the private bucket's 50 MB limit.
+  const options = mimeType
+    ? { mimeType, videoBitsPerSecond: 520000, audioBitsPerSecond: 64000 }
+    : { videoBitsPerSecond: 520000, audioBitsPerSecond: 64000 };
   mediaRecorder = new MediaRecorder(mediaStream, options);
   recordingChunks = [];
   recordingStartedAt = Date.now();
@@ -414,21 +417,22 @@ async function finishCurrentStream() {
     let recordingError = null;
     let streamError = null;
 
-    try {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        await stopRecordingAndSave(stream);
-        recordingSaved = true;
-      }
-    } catch (error) {
-      recordingError = error;
-      console.error('Recording upload failed:', error);
-    }
-
+    // Mark the stream as ended immediately, before a possibly long video upload.
     try {
       await endStream(stream.id);
     } catch (error) {
       streamError = error;
       console.error('Could not update stream status:', error);
+    }
+
+    try {
+      if (mediaRecorder) {
+        const savedRecording = await stopRecordingAndSave(stream);
+        recordingSaved = Boolean(savedRecording);
+      }
+    } catch (error) {
+      recordingError = error;
+      console.error('Recording upload failed:', error);
     } finally {
       stopCamera();
       startBtn.disabled = false;
