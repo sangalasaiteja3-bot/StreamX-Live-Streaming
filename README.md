@@ -17,7 +17,7 @@ Do not open `index.html` directly as a file; use localhost so browser ES modules
 - Like records with duplicate-like protection
 - Persistent chat messages with Realtime updates
 - Private notification reads
-- Local camera/microphone recording on Go Live, uploaded to private Supabase Storage when the creator ends the stream
+- Screen + webcam picture-in-picture recording with microphone audio; uploaded to private Supabase Storage when the creator ends the stream
 - My Recordings library with in-page playback and download links
 - Resumable TUS uploads for video files larger than 6 MB
 
@@ -33,7 +33,7 @@ Tables: `profiles`, `streams`, `follows`, `stream_messages`, `stream_likes`, `no
 Open http://localhost:5500/backend-demo.html to test Supabase Auth and database actions separately.
 
 ## Important live-video limitation
-Supabase stores accounts, profiles, stream metadata, follows, likes, chat, and private video recordings. When a creator ends a stream, StreamX uploads the creator's local camera/microphone recording to the private Storage bucket. The current app creates a live stream record and syncs it to other browsers, but **it does not transmit the live audio/video feed to viewers**. Actual multi-viewer broadcasting requires WebRTC signaling and a media server/TURN infrastructure or a dedicated streaming provider.
+Supabase stores accounts, profiles, stream metadata, follows, likes, chat, and private video recordings. When a creator ends a stream, StreamX uploads the creator's local camera/microphone recording to the private Storage bucket. The current app creates a live stream record and syncs it to other browsers, but **it does not transmit the live audio/video feed to viewers**. For recordings, creators can share a screen/tab/window and StreamX records that with a webcam picture-in-picture overlay plus microphone audio. Actual multi-viewer broadcasting requires WebRTC signaling and a media server/TURN infrastructure or a dedicated streaming provider.
 
 ## Security
 The browser contains only a Supabase publishable key. Never add a service-role key, secret API key, or database password to frontend files or GitHub.
