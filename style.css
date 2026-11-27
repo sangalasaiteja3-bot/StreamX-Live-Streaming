@@ -53,3 +53,25 @@
   .modal-actions{gap:8px}
   .modal-actions .secondary-btn,.modal-actions .primary-btn{width:100%}
 }
+
+
+/* Discover creators and manage follows */
+.creator-search{display:flex;align-items:center;gap:10px;width:min(520px,100%);margin:18px 0;padding:0 13px;height:42px;border:1px solid #2b3143;background:#111520;border-radius:9px;color:#9da5b8}
+.creator-search span{font-size:20px}
+.creator-search input{width:100%;border:0;outline:0;background:transparent;color:#f5f6fb;font-size:12px}
+.creator-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:14px}
+.person-card{display:flex;align-items:center;gap:11px;min-width:0;padding:13px;background:#111520;border:1px solid #282f40;border-radius:11px}
+.person-avatar{width:42px;height:42px;overflow:hidden;background:linear-gradient(135deg,#7657bd,#a44e82)}
+.person-avatar img{width:100%;height:100%;object-fit:cover}
+.person-details{min-width:0;flex:1}
+.person-details b,.person-details span,.person-details small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.person-details b{font-size:12px;color:#f3f4fb}
+.person-details span{font-size:10px;color:#a98aff;margin-top:3px}
+.person-details small{font-size:9px;color:#858da2;margin-top:4px}
+.person-follow-btn,.card-follow-btn{flex:none;border:1px solid #7858c0;background:#7957da;color:white;border-radius:7px;padding:8px 10px;font-size:10px;font-weight:700;white-space:nowrap}
+.person-follow-btn.is-following,.card-follow-btn:disabled{background:#222b3d;border-color:#3b465d;color:#c6cde0}
+.person-follow-btn:disabled,.card-follow-btn:disabled{opacity:.6;cursor:wait}
+.following-person-card{margin-bottom:9px}
+.following-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card-follow-btn{padding:6px 8px;background:#2a2145;border-color:#5c458e;color:#ddceff}
+.card-follow-btn:hover,.person-follow-btn:hover{filter:brightness(1.15)}
