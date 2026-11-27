@@ -21,6 +21,7 @@ let mediaRecorder = null;
 let recordingChunks = [];
 let recordingStartedAt = null;
 let ownLiveStream = null;
+let finishStreamPromise = null;
 let selectedStream = null;
 let chatChannel = null;
 let chatMessageIds = new Set();
@@ -395,6 +396,8 @@ async function stopRecordingAndSave(stream) {
 }
 
 async function finishCurrentStream() {
+  if (finishStreamPromise) return finishStreamPromise;
+
   const stream = ownLiveStream;
   if (!stream) {
     stopCamera();
@@ -406,41 +409,49 @@ async function finishCurrentStream() {
   startBtn.disabled = true;
   $('modalNotice').textContent = 'Finishing your stream and uploading its recording to your private StreamX library...';
 
-  let recordingSaved = false;
-  let recordingError = null;
-  let streamError = null;
+  finishStreamPromise = (async () => {
+    let recordingSaved = false;
+    let recordingError = null;
+    let streamError = null;
 
-  try {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      await stopRecordingAndSave(stream);
-      recordingSaved = true;
+    try {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        await stopRecordingAndSave(stream);
+        recordingSaved = true;
+      }
+    } catch (error) {
+      recordingError = error;
+      console.error('Recording upload failed:', error);
     }
-  } catch (error) {
-    recordingError = error;
-    console.error('Recording upload failed:', error);
-  }
+
+    try {
+      await endStream(stream.id);
+    } catch (error) {
+      streamError = error;
+      console.error('Could not update stream status:', error);
+    } finally {
+      stopCamera();
+      startBtn.disabled = false;
+      await Promise.all([refreshStreams(), refreshRecordings()]);
+    }
+
+    if (recordingSaved) {
+      $('modalNotice').textContent = 'Stream ended. Your video recording is saved under My Recordings.';
+      showToast('Recording saved! Open My Recordings to watch or download it.');
+    } else if (recordingError) {
+      $('modalNotice').textContent = 'Your stream ended, but the recording could not be uploaded.';
+      showToast('Stream ended, but recording upload failed: ' + recordingError.message);
+    } else {
+      showToast('Stream ended.');
+    }
+    if (streamError) showToast('Recording step finished, but stream status update failed: ' + streamError.message);
+  })();
 
   try {
-    await endStream(stream.id);
-  } catch (error) {
-    streamError = error;
-    console.error('Could not update stream status:', error);
+    await finishStreamPromise;
   } finally {
-    stopCamera();
-    startBtn.disabled = false;
-    await Promise.all([refreshStreams(), refreshRecordings()]);
+    finishStreamPromise = null;
   }
-
-  if (recordingSaved) {
-    $('modalNotice').textContent = 'Stream ended. Your video recording is saved under My Recordings.';
-    showToast('Recording saved! Open My Recordings to watch or download it.');
-  } else if (recordingError) {
-    $('modalNotice').textContent = 'Your stream ended, but the recording could not be uploaded.';
-    showToast('Stream ended, but recording upload failed: ' + recordingError.message);
-  } else {
-    showToast('Stream ended.');
-  }
-  if (streamError) showToast('Recording step finished, but stream status update failed: ' + streamError.message);
 }
 
 function formatRecordingDuration(seconds) {
@@ -510,12 +521,12 @@ function openLive() {
   openBox(liveModal);
 }
 async function closeLive() {
-  closeBox(liveModal);
-  if (ownLiveStream) {
+  if (ownLiveStream || finishStreamPromise) {
     await finishCurrentStream();
   } else {
     stopCamera();
   }
+  closeBox(liveModal);
 }
 $('heroGoLive').addEventListener('click', openLive);
 $('sideGoLive').addEventListener('click', openLive);
