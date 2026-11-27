@@ -8,3 +8,12 @@
 /* Functional demo additions */
 .extra-section{scroll-margin-top:25px}.following-list{padding:20px;background:#111520;border:1px solid #252b3a;border-radius:10px;color:#aab1c3;font-size:12px;line-height:1.6}.profile-panel{display:flex;align-items:center;gap:16px;padding:20px;background:#111520;border:1px solid #252b3a;border-radius:12px}.profile-avatar{width:55px;height:55px;font-size:17px;background:linear-gradient(135deg,#8c65ff,#ec5aa8)}.profile-panel h3{margin:0 0 5px;font:600 17px 'Space Grotesk'}.profile-panel p{margin:0;color:#9299ad;font-size:11px}.stream-card{cursor:pointer}.stream-card:hover .thumbnail{border-color:#9a79ff;transform:translateY(-2px)}.thumbnail{transition:.2s}.viewer-modal{width:min(650px,100%)}.viewer-screen{height:240px;border-radius:10px;background:radial-gradient(circle at center,#3b2864,#080b12 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#c7b4ff}.viewer-screen span{font-size:38px}.viewer-screen small{font-size:11px;color:#a6abc0}.viewer-actions{display:flex;gap:9px;margin:12px 0}.chat-box{background:#0d121e;border:1px solid #293247;border-radius:10px;padding:13px}.chat-box>b{font-size:12px}.chat-messages{height:100px;overflow:auto;padding:8px 0;color:#c5cbda;font-size:11px}.chat-messages p{margin:5px 0}.chat-system{color:#8e96aa}.chat-messages .chat-user{color:#b99dff}.chat-box form{display:flex;gap:8px}.chat-box form .field{flex:1;min-width:0}.chat-box form .primary-btn{padding:8px 13px}.more{padding:5px}.stream-info{cursor:default}
 .follow-chip{display:inline-block;background:#292142;border:1px solid #604b8d;border-radius:18px;padding:7px 12px;margin:3px;color:#d8caff}
+
+/* Explicit header authentication controls */
+.auth-header-actions{display:flex;align-items:center;gap:9px;flex:none}
+.auth-header-actions .profile-pill{min-height:38px;padding:8px 14px;border-color:#7556bc;background:#211b36;color:#e8dcff;white-space:nowrap}
+.logout-header-btn{min-height:38px;padding:8px 14px;border:1px solid #60415a;border-radius:30px;background:#291a29;color:#ffd6e8;font-size:11px;font-weight:700;white-space:nowrap}
+.logout-header-btn:hover{background:#48213b}
+.logout-header-btn:disabled{opacity:.6;cursor:wait}
+[hidden]{display:none!important}
+@media(max-width:720px){.auth-header-actions{gap:5px}.auth-header-actions .profile-pill,.logout-header-btn{min-height:34px;padding:7px 9px;font-size:10px}.top-actions{gap:7px}}
