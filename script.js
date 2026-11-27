@@ -2,7 +2,8 @@ import {
   auth, supabase, getMyProfile, updateMyProfile, listStreams, createStream,
   endStream, getMyFollowing, isFollowing, followCreator, unfollowCreator,
   getStreamLikeStats, likeStream, sendChatMessage, getChatMessages,
-  subscribeToChat, subscribeToStreams, getPublicProfile, getMyNotifications
+  subscribeToChat, subscribeToStreams, getPublicProfile, getMyNotifications,
+  saveStreamRecording, getMyStreamRecordings
 } from './backend/streamx-api.js';
 
 const $ = id => document.getElementById(id);
@@ -16,6 +17,9 @@ const toast = $('toast');
 let currentUser = null;
 let profile = null;
 let mediaStream = null;
+let mediaRecorder = null;
+let recordingChunks = [];
+let recordingStartedAt = null;
 let ownLiveStream = null;
 let selectedStream = null;
 let chatChannel = null;
@@ -116,7 +120,7 @@ async function syncAuthState(session) {
     }
   }
   renderProfile();
-  await Promise.all([refreshStreams(), refreshFollowing()]);
+  await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings()]);
 }
 function openAuth() {
   $('authMessage').textContent = 'Your account is stored securely in Supabase Auth.';
@@ -244,7 +248,7 @@ $('authSignOut').addEventListener('click', async () => {
     currentUser = null;
     profile = null;
     renderProfile();
-    await Promise.all([refreshStreams(), refreshFollowing()]);
+    await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings()]);
     closeBox($('authModal'));
     showToast('You have signed out.');
   } catch (error) {
@@ -328,6 +332,159 @@ async function refreshFollowing() {
   }
 }
 
+function recordingMimeType() {
+  const candidates = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm'
+  ];
+  return candidates.find(type => window.MediaRecorder?.isTypeSupported(type)) || '';
+}
+
+function startLocalRecording() {
+  if (!window.MediaRecorder) {
+    throw new Error('This browser does not support recording. Please use the latest Chrome or Edge.');
+  }
+  if (!mediaStream) throw new Error('Enable your camera and microphone before going live.');
+
+  const mimeType = recordingMimeType();
+  const options = mimeType ? { mimeType, videoBitsPerSecond: 2500000 } : { videoBitsPerSecond: 2500000 };
+  mediaRecorder = new MediaRecorder(mediaStream, options);
+  recordingChunks = [];
+  recordingStartedAt = Date.now();
+  mediaRecorder.addEventListener('dataavailable', event => {
+    if (event.data && event.data.size > 0) recordingChunks.push(event.data);
+  });
+  mediaRecorder.start(1000);
+}
+
+async function stopRecordingAndSave(stream) {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return null;
+  const recorder = mediaRecorder;
+  const startedAt = recordingStartedAt || Date.now();
+
+  return new Promise((resolve, reject) => {
+    recorder.addEventListener('stop', async () => {
+      const chunks = recordingChunks;
+      const durationSeconds = (Date.now() - startedAt) / 1000;
+      const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+      mediaRecorder = null;
+      recordingChunks = [];
+      recordingStartedAt = null;
+
+      try {
+        const saved = await saveStreamRecording({
+          streamId: stream.id,
+          title: stream.title,
+          category: stream.category,
+          blob,
+          durationSeconds
+        });
+        await refreshRecordings();
+        resolve(saved);
+      } catch (error) {
+        reject(error);
+      }
+    }, { once: true });
+    recorder.stop();
+  });
+}
+
+async function finishCurrentStream() {
+  const stream = ownLiveStream;
+  if (!stream) {
+    stopCamera();
+    return;
+  }
+
+  ownLiveStream = null;
+  startBtn.textContent = '● Go live';
+  startBtn.disabled = true;
+  $('modalNotice').textContent = 'Finishing your stream and uploading its recording to your private StreamX library...';
+
+  let recordingSaved = false;
+  let recordingError = null;
+  let streamError = null;
+
+  try {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      await stopRecordingAndSave(stream);
+      recordingSaved = true;
+    }
+  } catch (error) {
+    recordingError = error;
+    console.error('Recording upload failed:', error);
+  }
+
+  try {
+    await endStream(stream.id);
+  } catch (error) {
+    streamError = error;
+    console.error('Could not update stream status:', error);
+  } finally {
+    stopCamera();
+    startBtn.disabled = false;
+    await Promise.all([refreshStreams(), refreshRecordings()]);
+  }
+
+  if (recordingSaved) {
+    $('modalNotice').textContent = 'Stream ended. Your video recording is saved under My Recordings.';
+    showToast('Recording saved! Open My Recordings to watch or download it.');
+  } else if (recordingError) {
+    $('modalNotice').textContent = 'Your stream ended, but the recording could not be uploaded.';
+    showToast('Stream ended, but recording upload failed: ' + recordingError.message);
+  } else {
+    showToast('Stream ended.');
+  }
+  if (streamError) showToast('Recording step finished, but stream status update failed: ' + streamError.message);
+}
+
+function formatRecordingDuration(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remaining = total % 60;
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`
+    : `${minutes}:${String(remaining).padStart(2, '0')}`;
+}
+
+async function refreshRecordings() {
+  const list = $('recordingsList');
+  if (!list) return;
+  if (!currentUser) {
+    list.textContent = 'Sign in to see your saved recordings.';
+    return;
+  }
+
+  list.textContent = 'Loading your recordings...';
+  try {
+    const recordings = await getMyStreamRecordings();
+    if (!recordings.length) {
+      list.textContent = 'No recordings yet. Start a stream and end it to save your first video here.';
+      return;
+    }
+    list.innerHTML = recordings.map(recording => {
+      const date = new Date(recording.created_at).toLocaleString();
+      const sizeMb = (Number(recording.file_size_bytes) / (1024 * 1024)).toFixed(1);
+      return `<article class="recording-card">
+        <video controls preload="metadata" src="${escapeHTML(recording.watch_url)}"></video>
+        <div class="recording-card-info">
+          <b>${escapeHTML(recording.title)}</b>
+          <span>${escapeHTML(recording.category)} · ${formatRecordingDuration(recording.duration_seconds)} · ${sizeMb} MB</span>
+          <small>${escapeHTML(date)}</small>
+        </div>
+        <a class="recording-download" href="${escapeHTML(recording.download_url)}" target="_blank" rel="noopener">Download recording ↗</a>
+      </article>`;
+    }).join('');
+  } catch (error) {
+    console.error('Could not load StreamX recordings:', error);
+    list.textContent = 'Could not load recordings: ' + error.message;
+  }
+}
+
+$('refreshRecordingsBtn').addEventListener('click', refreshRecordings);
+
 function stopCamera() {
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
@@ -345,24 +502,16 @@ function openLive() {
     openAuth();
     return;
   }
-  $('modalNotice').textContent = 'Camera preview is local to this browser. Supabase will store the live stream record; video broadcasting needs a WebRTC/media service.';
+  $('modalNotice').textContent = 'Enable your camera and microphone, then go live. StreamX records your local camera/mic feed and uploads it privately when you end the stream. This build does not yet relay video to remote viewers.';
   openBox(liveModal);
 }
 async function closeLive() {
   closeBox(liveModal);
   if (ownLiveStream) {
-    const streamId = ownLiveStream.id;
-    ownLiveStream = null;
-    startBtn.textContent = '● Go live';
-    try {
-      await endStream(streamId);
-      showToast('Stream ended and saved.');
-      await refreshStreams();
-    } catch (error) {
-      showToast('Camera closed, but stream status could not be updated: ' + error.message);
-    }
+    await finishCurrentStream();
+  } else {
+    stopCamera();
   }
-  stopCamera();
 }
 $('heroGoLive').addEventListener('click', openLive);
 $('sideGoLive').addEventListener('click', openLive);
@@ -393,20 +542,7 @@ startBtn.addEventListener('click', async () => {
     return;
   }
   if (ownLiveStream) {
-    startBtn.disabled = true;
-    try {
-      await endStream(ownLiveStream.id);
-      ownLiveStream = null;
-      stopCamera();
-      startBtn.textContent = '● Go live';
-      $('modalNotice').textContent = 'Your stream has ended and the status was saved in Supabase.';
-      showToast('Stream ended and saved.');
-      await refreshStreams();
-    } catch (error) {
-      showToast('Could not end stream: ' + error.message);
-    } finally {
-      startBtn.disabled = false;
-    }
+    await finishCurrentStream();
     return;
   }
   const title = $('streamTitle').value.trim();
@@ -422,12 +558,21 @@ startBtn.addEventListener('click', async () => {
   startBtn.disabled = true;
   try {
     ownLiveStream = await createStream({ title, category, description: '' });
+    try {
+      startLocalRecording();
+    } catch (recordError) {
+      const failedStream = ownLiveStream;
+      ownLiveStream = null;
+      await endStream(failedStream.id).catch(() => {});
+      stopCamera();
+      throw recordError;
+    }
     startBtn.textContent = '■ End stream';
-    $('modalNotice').textContent = 'Your live stream record is stored in Supabase and visible to other signed-in visitors. The camera preview is still local to this browser.';
-    showToast('Your stream is now listed in StreamX!');
+    $('modalNotice').textContent = 'Recording is active. When you end the stream, StreamX uploads the video to your private My Recordings library. Remote live video broadcasting is not enabled yet.';
+    showToast('Stream started and recording is active.');
     await refreshStreams();
   } catch (error) {
-    showToast('Could not start stream: ' + error.message);
+    showToast('Could not start recording: ' + error.message);
   } finally {
     startBtn.disabled = false;
   }
