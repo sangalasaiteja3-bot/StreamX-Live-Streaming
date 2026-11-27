@@ -202,3 +202,74 @@ export async function getMyNotifications() {
 }
 
 export { supabase };
+
+
+/** Upload a creator's MediaRecorder output to private Supabase Storage. */
+export async function saveStreamRecording({ streamId, title, category, blob, durationSeconds }) {
+  const user = await auth.currentUser();
+  if (!user) throw new Error('Sign in before saving a recording.');
+  if (!(blob instanceof Blob) || blob.size === 0) {
+    throw new Error('The recording is empty, so there is no video to save.');
+  }
+  const maxBytes = 250 * 1024 * 1024;
+  if (blob.size > maxBytes) {
+    throw new Error('This recording is larger than the 250 MB limit. Try a shorter stream.');
+  }
+
+  const contentType = blob.type === 'video/mp4' ? 'video/mp4' : 'video/webm';
+  const extension = contentType === 'video/mp4' ? 'mp4' : 'webm';
+  const filePath = `${user.id}/${streamId}/recording-${Date.now()}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('streamx-recordings')
+    .upload(filePath, blob, {
+      contentType,
+      cacheControl: '3600',
+      upsert: false
+    });
+  if (uploadError) throw uploadError;
+
+  const { data, error } = await supabase.from('stream_recordings').insert({
+    stream_id: streamId,
+    creator_id: user.id,
+    title: title || 'StreamX recording',
+    category: category || 'General',
+    file_path: filePath,
+    content_type: contentType,
+    file_size_bytes: blob.size,
+    duration_seconds: Math.max(0, Number(durationSeconds) || 0)
+  }).select().single();
+
+  if (error) {
+    await supabase.storage.from('streamx-recordings').remove([filePath]);
+    throw error;
+  }
+  return data;
+}
+
+/** Return time-limited watch and download links for recordings owned by the user. */
+export async function getMyStreamRecordings() {
+  const user = await auth.currentUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase.from('stream_recordings')
+    .select('*')
+    .eq('creator_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+
+  return Promise.all((data || []).map(async recording => {
+    const [watchResult, downloadResult] = await Promise.all([
+      supabase.storage.from('streamx-recordings').createSignedUrl(recording.file_path, 3600),
+      supabase.storage.from('streamx-recordings').createSignedUrl(recording.file_path, 3600, { download: true })
+    ]);
+    if (watchResult.error) throw watchResult.error;
+    if (downloadResult.error) throw downloadResult.error;
+    return {
+      ...recording,
+      watch_url: watchResult.data.signedUrl,
+      download_url: downloadResult.data.signedUrl
+    };
+  }));
+}
