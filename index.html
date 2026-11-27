@@ -13,6 +13,7 @@
     <div class="side-label">MENU</div>
     <a class="nav active" href="#home">⌂ <span>Home</span></a>
     <a class="nav" href="#explore">◉ <span>Explore</span></a>
+    <a class="nav" href="#discoverCreators">♙ <span>Discover creators</span></a>
     <a class="nav" href="#following">♡ <span>Following</span></a>
     <a class="nav" href="#categories">▦ <span>Categories</span></a>
     <div class="side-label following-label">YOUR SPACE</div>
@@ -62,6 +63,16 @@
       <div class="filters" id="categories"><button class="filter active" data-filter="All">For you</button><button class="filter" data-filter="Gaming">🎮 Gaming</button><button class="filter" data-filter="Music">♫ Music</button><button class="filter" data-filter="Education">✧ Education</button><button class="filter" data-filter="Talk">☏ Just chatting</button><button class="filter" data-filter="Art">✎ Art & design</button></div>
       <div class="stream-grid" id="streamGrid"></div>
       <div class="empty-state" id="emptyState" hidden>There are no live streams yet. Sign in and start the first StreamX stream.</div>
+    </section>
+    <section class="section extra-section" id="discoverCreators">
+      <div class="section-heading">
+        <div><div class="eyebrow">MEET THE COMMUNITY</div><h2>Discover creators</h2></div>
+      </div>
+      <label class="creator-search" for="creatorSearchInput">
+        <span>⌕</span>
+        <input id="creatorSearchInput" type="search" placeholder="Search by creator name or username...">
+      </label>
+      <div class="creator-grid" id="creatorGrid">Loading creators...</div>
     </section>
     <section class="section extra-section" id="following"><div class="section-heading"><div><div class="eyebrow">YOUR COMMUNITY</div><h2>Following</h2></div></div><div id="followingList" class="following-list">You are not following any creators yet. Open a stream and select Follow to build your list.</div></section>
     <section class="section extra-section" id="profile"><div class="section-heading"><div><div class="eyebrow">YOUR ACCOUNT</div><h2>My profile</h2></div><button class="secondary-btn" id="editProfileBtn">Edit profile</button></div><div class="profile-panel"><div class="avatar profile-avatar" id="profileAvatar">ST</div><div><h3 id="profileName">Sai Teja</h3><p id="profileBio">Creator account · Welcome to StreamX!</p></div></div></section>
