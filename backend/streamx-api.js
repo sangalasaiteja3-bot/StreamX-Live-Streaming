@@ -216,7 +216,8 @@ export async function saveStreamRecording({ streamId, title, category, blob, dur
     throw new Error('This recording is larger than the 250 MB limit. Try a shorter stream.');
   }
 
-  const contentType = blob.type === 'video/mp4' ? 'video/mp4' : 'video/webm';
+  const detectedType = String(blob.type || 'video/webm').toLowerCase();
+  const contentType = detectedType.startsWith('video/mp4') ? 'video/mp4' : 'video/webm';
   const extension = contentType === 'video/mp4' ? 'mp4' : 'webm';
   const filePath = `${user.id}/${streamId}/recording-${Date.now()}.${extension}`;
 
