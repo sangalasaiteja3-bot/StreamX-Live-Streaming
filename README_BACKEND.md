@@ -42,3 +42,12 @@ The app currently creates and syncs stream metadata and chat, but camera preview
 
 ## Security
 The browser uses a Supabase publishable key only. Never commit a service-role or secret key, database password, or private token.
+
+
+## Saved live recordings
+- StreamX records the creator's local camera and microphone feed with the browser `MediaRecorder` API when **Go Live** is clicked.
+- When the creator ends the stream, the browser uploads the WebM/MP4 file to the private `streamx-recordings` Supabase Storage bucket.
+- Recording metadata is stored in `stream_recordings`. Open **My Recordings** in the app to watch or download files.
+- Files are private: authenticated users can upload, read, and delete only objects in their own user-ID folder. Signed watch/download links expire after one hour.
+- Individual recordings are limited to 250 MB. Upload time depends on recording size and network speed.
+- This feature saves the creator's local camera/microphone feed; it does not make the camera feed visible to other viewers. Multi-viewer live broadcasting still requires a WebRTC/SFU or managed streaming service.
