@@ -20,7 +20,16 @@
     <a class="nav" href="#profile">♙ <span>My profile</span></a>
     <div class="sidebar-bottom">
       <div class="mini-card"><div class="mini-icon">✦</div><b>Ready to go live?</b><p>Share your moment with the world.</p><button class="small-live" id="sideGoLive">＋ Start streaming</button></div>
-      <div class="user-mini"><div class="avatar">ST</div><div><b>Sai Teja</b><small>Creator account</small></div><span class="dots">•••</span></div>
+      <div class="user-mini">
+        <div class="avatar">ST</div>
+        <div class="user-mini-details"><b>Sai Teja</b><small>Creator account</small></div>
+        <button class="dots" id="accountMenuBtn" type="button" aria-label="Open account menu" aria-haspopup="true" aria-expanded="false" aria-controls="accountMenu">•••</button>
+      </div>
+      <div class="account-menu" id="accountMenu" hidden>
+        <button type="button" id="accountEditProfile">Edit profile</button>
+        <button type="button" id="accountMyAccount">My account</button>
+        <button type="button" id="accountLogout" class="account-menu-logout">Logout</button>
+      </div>
     </div>
   </aside>
 
