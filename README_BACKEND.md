@@ -21,8 +21,9 @@ The website imports the shared client from `backend/supabase-client.js` and data
 | Load/send chat | `stream_messages` |
 | Live chat updates | Realtime changes on `stream_messages` |
 | Notifications | `notifications` |
+| Saved video recordings | `stream_recordings` and private Storage bucket `streamx-recordings` |
 
-The profile trigger creates a `profiles` row after a new Auth user is created. All six exposed public tables have Row Level Security enabled, and the existing project policies restrict write operations to authenticated owners/users.
+The profile trigger creates a `profiles` row after a new Auth user is created. All seven exposed public tables have Row Level Security enabled, and the project policies restrict writes to authenticated owners/users.
 
 ## Run in VS Code
 1. Open the project folder.
