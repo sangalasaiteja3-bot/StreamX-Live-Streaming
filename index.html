@@ -80,12 +80,12 @@
       <button class="close-modal" id="closeModal">×</button>
       <div class="eyebrow"><span class="pulse"></span> CREATOR STUDIO</div>
       <h2>Start your stream</h2>
-      <p class="modal-sub">Set up your broadcast. Your browser will ask for camera and microphone access.</p>
+      <p class="modal-sub">Enable your camera, then optionally share a screen or app window. The recording combines your screen with a webcam picture-in-picture.</p>
       <label class="field-label" for="streamTitle">Stream title</label><input class="field" id="streamTitle" value="Live with StreamX!" maxlength="70">
       <label class="field-label" for="streamCategory">Category</label><select class="field" id="streamCategory"><option>Just chatting</option><option>Gaming</option><option>Music</option><option>Education</option><option>Art & design</option></select>
       <div class="camera-box"><video id="cameraPreview" autoplay muted playsinline></video><div class="camera-placeholder" id="cameraPlaceholder"><span>◉</span><b>Camera preview</b><small>Your preview will appear here</small></div></div>
-      <div class="modal-actions"><button class="secondary-btn" id="cameraBtn">Enable camera</button><button class="primary-btn" id="startBtn">● Go live</button></div>
-      <p class="notice" id="modalNotice">Demo mode: live video is previewed on this device only. Multi-user broadcasting needs a streaming server/service.</p>
+      <div class="modal-actions"><button class="secondary-btn" id="cameraBtn" type="button">Enable camera</button><button class="secondary-btn" id="screenBtn" type="button">Share screen</button><button class="primary-btn" id="startBtn" type="button">● Go live</button></div>
+      <p class="notice" id="modalNotice">Enable camera and microphone first. Share your screen to record it with your webcam in a picture-in-picture corner. When you end the stream, the combined recording uploads privately. Choose a browser tab/window or screen carefully; only share audio when you want it recorded.</p>
     </div>
   </div>
   <div class="modal-backdrop" id="viewerModal" aria-hidden="true"><div class="modal viewer-modal"><button class="close-modal" id="closeViewer">×</button><div class="eyebrow"><span class="pulse"></span> LIVE STREAM</div><h2 id="viewerTitle">Stream title</h2><p class="modal-sub" id="viewerCreator">Creator · Category</p><div class="viewer-screen" id="viewerScreen"><span>▶</span><small>Demo stream preview</small></div><div class="viewer-actions"><button class="secondary-btn" id="followBtn">♡ Follow creator</button><button class="secondary-btn" id="likeBtn">♡ Like <span id="likeCount">0</span></button></div><div class="chat-box"><b>Live chat</b><div id="chatMessages" class="chat-messages"><p class="chat-system">Welcome! Be kind to everyone in chat.</p></div><form id="chatForm"><input id="chatInput" class="field" maxlength="180" placeholder="Send a message..." required><button class="primary-btn">Send</button></form></div></div></div>
