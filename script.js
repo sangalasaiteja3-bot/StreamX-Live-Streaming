@@ -3,7 +3,7 @@ import {
   endStream, getMyFollowing, isFollowing, followCreator, unfollowCreator,
   getStreamLikeStats, likeStream, sendChatMessage, getChatMessages,
   subscribeToChat, subscribeToStreams, getPublicProfile, getMyNotifications,
-  saveStreamRecording, getMyStreamRecordings
+  saveStreamRecording, getMyStreamRecordings, listCreators
 } from './backend/streamx-api.js';
 
 const $ = id => document.getElementById(id);
@@ -42,6 +42,8 @@ let chatMessageIds = new Set();
 let activeFilter = 'All';
 let authMode = 'signin';
 let allStreams = [];
+let allCreators = [];
+let followingIds = new Set();
 let toastTimer;
 
 function showToast(message) {
@@ -135,7 +137,7 @@ async function syncAuthState(session) {
     }
   }
   renderProfile();
-  await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings()]);
+  await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings(), refreshCreators()]);
 }
 function openAuth() {
   $('authMessage').textContent = 'Your account is stored securely in Supabase Auth.';
@@ -263,7 +265,7 @@ $('authSignOut').addEventListener('click', async () => {
     currentUser = null;
     profile = null;
     renderProfile();
-    await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings()]);
+    await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings(), refreshCreators()]);
     closeBox($('authModal'));
     showToast('You have signed out.');
   } catch (error) {
@@ -306,7 +308,9 @@ function renderStreams() {
       <div class="stream-info">
         <div class="avatar">${escapeHTML(initials(creator))}</div>
         <div class="stream-text"><b>${escapeHTML(stream.title)}</b><span>${escapeHTML(creator)} · ${escapeHTML(stream.category || 'General')}</span></div>
-        <button class="more" type="button" aria-label="Stream options">•••</button>
+        <button class="card-follow-btn" type="button" data-card-follow data-stream-id="${id}">
+          ${followingIds.has(stream.creator_id) ? '✓ Following' : '+ Follow'}
+        </button>
       </div>
     </article>`;
   }).join('');
@@ -318,6 +322,18 @@ function renderStreams() {
   if (liveCount) liveCount.textContent = `● ${allStreams.length} live`;
 }
 $('streamGrid').addEventListener('click', async event => {
+  const followButton = event.target.closest('[data-card-follow]');
+  if (followButton) {
+    event.stopPropagation();
+    followButton.disabled = true;
+    try {
+      const stream = allStreams.find(item => item.id === followButton.dataset.streamId);
+      if (stream) await toggleCreatorFollow(stream.creator_id, !followingIds.has(stream.creator_id));
+    } finally {
+      followButton.disabled = false;
+    }
+    return;
+  }
   const card = event.target.closest('.stream-card');
   if (!card) return;
   if (event.target.closest('.more')) {
@@ -328,24 +344,149 @@ $('streamGrid').addEventListener('click', async event => {
   if (stream) await openViewer(stream);
 });
 
+function creatorAvatar(profile) {
+  const name = displayName(profile, 'StreamX creator');
+  return profile?.avatar_url
+    ? `<img src="${escapeHTML(profile.avatar_url)}" alt="" loading="lazy">`
+    : escapeHTML(initials(name));
+}
+
+function renderFollowing(rows = []) {
+  const list = $('followingList');
+  if (!currentUser) {
+    list.textContent = 'Sign in to follow creators and build your community.';
+    return;
+  }
+  if (!rows.length) {
+    list.textContent = 'You are not following anyone yet. Visit Discover creators and press Follow.';
+    return;
+  }
+  list.innerHTML = rows.map(row => {
+    const creator = row.profiles || {};
+    const id = escapeHTML(row.followed_id);
+    return `<article class="person-card following-person-card">
+      <div class="avatar person-avatar">${creatorAvatar(creator)}</div>
+      <div class="person-details">
+        <b>${escapeHTML(displayName(creator))}</b>
+        <span>@${escapeHTML(creator.username || 'creator')}</span>
+      </div>
+      <button class="person-follow-btn is-following" type="button" data-creator-id="${id}" data-follow-action="unfollow">Unfollow</button>
+    </article>`;
+  }).join('');
+}
+
 async function refreshFollowing() {
   if (!currentUser) {
-    $('followingList').textContent = 'Sign in to see the creators you follow.';
+    followingIds = new Set();
+    renderFollowing([]);
     return;
   }
   try {
     const rows = await getMyFollowing();
-    $('followingList').innerHTML = rows.length
-      ? rows.map(row => {
-          const creator = row.profiles;
-          return `<span class="follow-chip">${escapeHTML(displayName(creator))}</span>`;
-        }).join(' ')
-      : 'You are not following anyone yet. Open a live stream and select Follow creator.';
+    followingIds = new Set(rows.map(row => row.followed_id));
+    renderFollowing(rows);
   } catch (error) {
     console.error('Could not load following list:', error);
-    $('followingList').textContent = 'Could not load your following list.';
+    $('followingList').textContent = 'Could not load your following list: ' + error.message;
   }
 }
+
+function renderCreators() {
+  const grid = $('creatorGrid');
+  if (!grid) return;
+  const query = $('creatorSearchInput').value.toLowerCase().trim();
+  const visible = allCreators.filter(creator => {
+    if (currentUser && creator.id === currentUser.id) return false;
+    const text = `${creator.display_name || ''} ${creator.username || ''} ${creator.bio || ''}`.toLowerCase();
+    return text.includes(query);
+  });
+
+  if (!visible.length) {
+    grid.textContent = allCreators.length > 0
+      ? 'No creators match your search. Try another name or username.'
+      : 'No other creators have joined StreamX yet. Invite someone to create an account, then you can follow them here.';
+    return;
+  }
+
+  grid.innerHTML = visible.map(creator => {
+    const id = escapeHTML(creator.id);
+    const isFollowed = followingIds.has(creator.id);
+    return `<article class="person-card">
+      <div class="avatar person-avatar">${creatorAvatar(creator)}</div>
+      <div class="person-details">
+        <b>${escapeHTML(displayName(creator))}</b>
+        <span>@${escapeHTML(creator.username || 'creator')}</span>
+        <small>${escapeHTML(creator.bio || 'StreamX creator')}</small>
+      </div>
+      <button class="person-follow-btn ${isFollowed ? 'is-following' : ''}" type="button"
+        data-creator-id="${id}" data-follow-action="${isFollowed ? 'unfollow' : 'follow'}">
+        ${isFollowed ? '✓ Following' : '+ Follow'}
+      </button>
+    </article>`;
+  }).join('');
+}
+
+async function refreshCreators() {
+  const grid = $('creatorGrid');
+  if (!grid) return;
+  grid.textContent = 'Loading creators...';
+  try {
+    allCreators = await listCreators();
+    renderCreators();
+  } catch (error) {
+    console.error('Could not load creators:', error);
+    grid.textContent = 'Could not load creators: ' + error.message;
+  }
+}
+
+async function toggleCreatorFollow(creatorId, shouldFollow) {
+  if (!currentUser) {
+    showToast('Sign in to follow creators.');
+    openAuth();
+    return;
+  }
+  if (currentUser.id === creatorId) {
+    showToast('You cannot follow your own account.');
+    return;
+  }
+  try {
+    if (shouldFollow) {
+      await followCreator(creatorId);
+      showToast('You are now following this creator.');
+    } else {
+      await unfollowCreator(creatorId);
+      showToast('Creator unfollowed.');
+    }
+    await refreshFollowing();
+    renderCreators();
+  } catch (error) {
+    showToast('Follow action failed: ' + error.message);
+  }
+}
+
+$('creatorSearchInput').addEventListener('input', renderCreators);
+
+$('creatorGrid').addEventListener('click', async event => {
+  const button = event.target.closest('[data-follow-action]');
+  if (!button) return;
+  button.disabled = true;
+  try {
+    await toggleCreatorFollow(button.dataset.creatorId, button.dataset.followAction === 'follow');
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('followingList').addEventListener('click', async event => {
+  const button = event.target.closest('[data-follow-action="unfollow"]');
+  if (!button) return;
+  button.disabled = true;
+  try {
+    await toggleCreatorFollow(button.dataset.creatorId, false);
+  } finally {
+    button.disabled = false;
+  }
+});
 
 function recordingMimeType() {
   const candidates = [
@@ -898,16 +1039,8 @@ $('followBtn').addEventListener('click', async () => {
   }
   try {
     const alreadyFollowing = await isFollowing(selectedStream.creator_id);
-    if (alreadyFollowing) {
-      await unfollowCreator(selectedStream.creator_id);
-      $('followBtn').textContent = '♡ Follow creator';
-      showToast('Creator unfollowed.');
-    } else {
-      await followCreator(selectedStream.creator_id);
-      $('followBtn').textContent = '✓ Following';
-      showToast('You are now following this creator.');
-    }
-    await refreshFollowing();
+    await toggleCreatorFollow(selectedStream.creator_id, !alreadyFollowing);
+    $('followBtn').textContent = alreadyFollowing ? '♡ Follow creator' : '✓ Following';
   } catch (error) {
     showToast('Follow action failed: ' + error.message);
   }
@@ -1003,6 +1136,7 @@ document.querySelectorAll('.nav').forEach(link => {
     link.classList.add('active');
     if (target === '#home') window.scrollTo({ top: 0, behavior: 'smooth' });
     if (target === '#categories') $('explore').scrollIntoView({ behavior: 'smooth' });
+    if (target === '#discoverCreators') $('discoverCreators').scrollIntoView({ behavior: 'smooth' });
   });
 });
 document.querySelector('.icon-btn').addEventListener('click', async () => {
