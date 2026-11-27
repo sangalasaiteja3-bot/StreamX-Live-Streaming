@@ -77,7 +77,8 @@ function renderAuthPanel() {
   } else {
     updateAuthMode();
   }
-  $('authOpenBtn').textContent = signedIn ? (profile?.display_name || profile?.username || 'My account') : 'Sign in / Sign up';
+  $('authOpenBtn').textContent = signedIn ? (profile?.display_name || profile?.username || 'My account') : 'Login / Sign up';
+  $('authLogoutBtn').hidden = !signedIn;
 }
 function updateAuthMode() {
   const signup = authMode === 'signup';
@@ -173,6 +174,21 @@ $('authSubmit').addEventListener('click', async () => {
     button.disabled = false;
   }
 });
+$('authLogoutBtn').addEventListener('click', async () => {
+  const button = $('authLogoutBtn');
+  button.disabled = true;
+  try {
+    await auth.signOut();
+    await syncAuthState(null);
+    closeBox($('authModal'));
+    showToast('You have signed out.');
+  } catch (error) {
+    showToast('Could not sign out: ' + error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 $('authSignOut').addEventListener('click', async () => {
   try {
     await auth.signOut();
