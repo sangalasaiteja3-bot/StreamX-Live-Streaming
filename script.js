@@ -339,7 +339,7 @@ function recordingMimeType() {
     'video/webm;codecs=vp8,opus',
     'video/webm'
   ];
-  return candidates.find(type => window.MediaRecorder?.isTypeSupported(type)) || '';
+  return candidates.find(type => window.MediaRecorder?.isTypeSupported?.(type)) || '';
 }
 
 function startLocalRecording() {
