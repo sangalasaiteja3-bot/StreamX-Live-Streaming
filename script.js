@@ -137,7 +137,10 @@ async function syncAuthState(session) {
     }
   }
   renderProfile();
-  await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings(), refreshCreators()]);
+  await Promise.all([refreshStreams(), refreshRecordings()]);
+  await refreshFollowing();
+  renderStreams();
+  await refreshCreators();
 }
 function openAuth() {
   $('authMessage').textContent = 'Your account is stored securely in Supabase Auth.';
@@ -265,7 +268,10 @@ $('authSignOut').addEventListener('click', async () => {
     currentUser = null;
     profile = null;
     renderProfile();
-    await Promise.all([refreshStreams(), refreshFollowing(), refreshRecordings(), refreshCreators()]);
+    await Promise.all([refreshStreams(), refreshRecordings()]);
+  await refreshFollowing();
+  renderStreams();
+  await refreshCreators();
     closeBox($('authModal'));
     showToast('You have signed out.');
   } catch (error) {
