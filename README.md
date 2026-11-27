@@ -17,20 +17,23 @@ Do not open `index.html` directly as a file; use localhost so browser ES modules
 - Like records with duplicate-like protection
 - Persistent chat messages with Realtime updates
 - Private notification reads
+- Local camera/microphone recording on Go Live, uploaded to private Supabase Storage when the creator ends the stream
+- My Recordings library with in-page playback and download links
+- Resumable TUS uploads for video files larger than 6 MB
 
-The homepage now loads live streams from Postgres rather than showing hard-coded sample streams. Users must sign in for actions that write data.
+The homepage now loads live streams from Postgres rather than showing hard-coded sample streams. Users must sign in for actions that write data. Recordings are limited to 250 MB per stream.
 
 ## Backend project
 [Open StreamX Supabase Dashboard](https://supabase.com/dashboard/project/pzuxtlgadeqzzkghkyqb)  
 Region: Mumbai (`ap-south-1`)
 
-Tables: `profiles`, `streams`, `follows`, `stream_messages`, `stream_likes`, `notifications`. RLS is enabled on all exposed tables. Realtime is enabled for streams and chat. Storage buckets `streamx-avatars` and `streamx-thumbnails` are configured.
+Tables: `profiles`, `streams`, `follows`, `stream_messages`, `stream_likes`, `notifications`, and `stream_recordings`. RLS is enabled on exposed tables. Realtime is enabled for streams and chat. Storage buckets include `streamx-avatars`, `streamx-thumbnails`, and the private `streamx-recordings` bucket.
 
 ## Backend test dashboard
 Open http://localhost:5500/backend-demo.html to test Supabase Auth and database actions separately.
 
 ## Important live-video limitation
-Supabase stores accounts, profiles, stream metadata, follows, likes and chat. The browser camera preview is local to the creator's device. The current app creates a live stream record and syncs it to other browsers, but **it does not transmit audio/video to viewers**. Actual multi-viewer broadcasting requires WebRTC signaling and a media server/TURN infrastructure or a dedicated streaming provider.
+Supabase stores accounts, profiles, stream metadata, follows, likes, chat, and private video recordings. When a creator ends a stream, StreamX uploads the creator's local camera/microphone recording to the private Storage bucket. The current app creates a live stream record and syncs it to other browsers, but **it does not transmit the live audio/video feed to viewers**. Actual multi-viewer broadcasting requires WebRTC signaling and a media server/TURN infrastructure or a dedicated streaming provider.
 
 ## Security
 The browser contains only a Supabase publishable key. Never add a service-role key, secret API key, or database password to frontend files or GitHub.
