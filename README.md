@@ -13,7 +13,8 @@ Do not open `index.html` directly as a file; use localhost so browser ES modules
 - Email/password sign-up and sign-in using Supabase Auth
 - Creator profile read/update
 - Live stream creation, listing, ending and realtime feed updates
-- Follow/unfollow creators
+- Discover registered creators and follow/unfollow them from creator cards, stream cards, or their stream room
+- View and manage the creators you follow
 - Like records with duplicate-like protection
 - Persistent chat messages with Realtime updates
 - Private notification reads
