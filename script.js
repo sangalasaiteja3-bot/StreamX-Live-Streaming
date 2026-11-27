@@ -465,6 +465,7 @@ async function toggleCreatorFollow(creatorId, shouldFollow) {
     }
     await refreshFollowing();
     renderCreators();
+    renderStreams();
   } catch (error) {
     showToast('Follow action failed: ' + error.message);
   }
