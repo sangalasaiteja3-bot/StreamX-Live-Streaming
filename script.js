@@ -174,6 +174,55 @@ $('authSubmit').addEventListener('click', async () => {
     button.disabled = false;
   }
 });
+
+/* Sidebar account menu */
+const accountMenu = $('accountMenu');
+const accountMenuBtn = $('accountMenuBtn');
+
+function closeAccountMenu() {
+  accountMenu.hidden = true;
+  accountMenuBtn.setAttribute('aria-expanded', 'false');
+}
+
+accountMenuBtn.addEventListener('click', event => {
+  event.stopPropagation();
+  const willOpen = accountMenu.hidden;
+  accountMenu.hidden = !willOpen;
+  accountMenuBtn.setAttribute('aria-expanded', String(willOpen));
+});
+
+accountMenu.addEventListener('click', event => event.stopPropagation());
+document.addEventListener('click', event => {
+  if (!accountMenu.hidden && !accountMenu.contains(event.target) && event.target !== accountMenuBtn) {
+    closeAccountMenu();
+  }
+});
+
+$('accountEditProfile').addEventListener('click', () => {
+  closeAccountMenu();
+  if (!currentUser) {
+    openAuth();
+    return;
+  }
+  $('nameInput').value = profile?.display_name || profile?.username || '';
+  $('bioInput').value = profile?.bio || '';
+  openBox($('profileModal'));
+});
+
+$('accountMyAccount').addEventListener('click', () => {
+  closeAccountMenu();
+  openAuth();
+});
+
+$('accountLogout').addEventListener('click', () => {
+  closeAccountMenu();
+  if (!currentUser) {
+    openAuth();
+    return;
+  }
+  $('authLogoutBtn').click();
+});
+
 $('authLogoutBtn').addEventListener('click', async () => {
   const button = $('authLogoutBtn');
   button.disabled = true;
@@ -583,6 +632,7 @@ document.querySelector('.icon-btn').addEventListener('click', async () => {
 
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
+    closeAccountMenu();
     closeLive();
     closeBox($('viewerModal'));
     closeBox($('profileModal'));
