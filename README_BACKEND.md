@@ -46,7 +46,7 @@ The browser uses a Supabase publishable key only. Never commit a service-role or
 
 
 ## Saved live recordings
-- StreamX records the creator's local camera and microphone feed with the browser `MediaRecorder` API when **Go Live** is clicked.
+- StreamX can record the creator's camera and microphone alone, or a shared screen/tab/window with a webcam picture-in-picture overlay, using the browser `MediaRecorder` API when **Go Live** is clicked. Click **Share screen** before going live to include the screen.
 - When the creator ends the stream, the browser uploads the WebM/MP4 file to the private `streamx-recordings` Supabase Storage bucket.
 - Recording metadata is stored in `stream_recordings`. Open **My Recordings** in the app to watch or download files.
 - Files are private: authenticated users can upload, read, and delete only objects in their own user-ID folder. Signed watch/download links expire after one hour.
