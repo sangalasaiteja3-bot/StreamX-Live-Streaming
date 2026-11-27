@@ -39,7 +39,7 @@ Use http://localhost:5500/backend-demo.html for a separate backend test dashboar
 Hosted Supabase projects commonly require email verification by default. After sign-up, check your email, confirm the address, return to the local app, and sign in. Passwords are handled by Supabase Auth, not stored in the StreamX tables.
 
 ## Video architecture limitation
-The app currently creates and syncs stream metadata and chat, but camera preview is local only. To make viewers receive a live audiovisual feed, add WebRTC signaling plus STUN/TURN and a Selective Forwarding Unit (SFU), or integrate a managed streaming provider. Do not describe the current Supabase-only build as full video broadcasting.
+StreamX records the creator's local camera/microphone feed with the browser MediaRecorder API and uploads the video privately when the creator ends the stream. This creates a replay for the creator, but does not relay live audio/video to other viewers. Multi-viewer broadcasting still needs WebRTC signaling plus STUN/TURN and an SFU, or a managed streaming provider. Individual recordings are limited to 50 MB by the private bucket.
 
 ## Security
 The browser uses a Supabase publishable key only. Never commit a service-role or secret key, database password, or private token.
