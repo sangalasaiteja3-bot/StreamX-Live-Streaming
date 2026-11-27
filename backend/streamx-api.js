@@ -93,6 +93,15 @@ export async function endStream(streamId) {
   return data;
 }
 
+export async function listCreators() {
+  const { data, error } = await supabase.from('profiles')
+    .select('id, username, display_name, avatar_url, bio, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function getMyFollowing() {
   const user = await auth.currentUser();
   if (!user) return [];
